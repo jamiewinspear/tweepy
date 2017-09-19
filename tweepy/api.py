@@ -1463,6 +1463,12 @@ class API(object):
 
         BOUNDARY = b'Tw3ePy'
         body = list()
+        if file_type == 'image/gif':
+            body.append(
+                urlencode({
+                    'media_category': 'tweet_gif',
+                }).encode('utf-8')
+            )
         if command == 'init':
             body.append(
                 urlencode({
