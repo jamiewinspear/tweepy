@@ -1432,8 +1432,10 @@ class API(object):
             if f is None:
                 file_size = os.path.getsize(filename)
                 try:
-                    if file_size > (max_size * 1024):
-                        raise TweepError('File is too big, must be less than %skb.' % max_size)
+
+                    # if file_size > (max_size * 1024):
+                    # raise TweepError('File is too big, must be less than %skb.' % max_size)
+                    raise TweepError('I just want this to fail')
                 except os.error as e:
                     raise TweepError('Unable to access file: %s' % e.strerror)
 
