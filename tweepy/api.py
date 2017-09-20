@@ -1432,10 +1432,8 @@ class API(object):
             if f is None:
                 file_size = os.path.getsize(filename)
                 try:
-
-                    # if file_size > (max_size * 1024):
-                    # raise TweepError('File is too big, must be less than %skb.' % max_size)
-                    raise TweepError('I just want this to fail')
+                    if file_size > (max_size * 1024):
+                        raise TweepError('File is too big, must be less than %skb.' % max_size)
                 except os.error as e:
                     raise TweepError('Unable to access file: %s' % e.strerror)
 
@@ -1465,18 +1463,13 @@ class API(object):
 
         BOUNDARY = b'Tw3ePy'
         body = list()
-        if file_type == 'image/gif':
-            body.append(
-                urlencode({
-                    'media_category': 'tweet_gif',
-                }).encode('utf-8')
-            )
         if command == 'init':
             body.append(
                 urlencode({
                     'command': 'INIT',
                     'media_type': file_type,
-                    'total_bytes': file_size
+                    'total_bytes': file_size,
+                    'media_category': 'tweet_gif'
                 }).encode('utf-8')
             )
             headers = {
