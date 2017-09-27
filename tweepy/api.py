@@ -254,6 +254,7 @@ class API(object):
         headers, post_data, fp = API._chunk_media(
             'init', filename, self.max_size_chunked,
             form_field='media', f=f, **kwargs)
+
         kwargs.update({ 'headers': headers, 'post_data': post_data })
 
         # Send the INIT request
@@ -278,6 +279,7 @@ class API(object):
             nloops = int(fsize / chunk_size) + (1 if fsize % chunk_size > 0 else 0)
             for i in range(nloops):
                 headers, post_data, fp = API._chunk_media('append', filename, self.max_size_chunked, chunk_size=chunk_size, f=fp, media_id=media_info.media_id, segment_index=i, **kwargs)
+
                 kwargs.update({ 'headers': headers, 'post_data': post_data, 'parser': RawParser() })
                 # The APPEND command returns an empty response body
                 bind_api(
@@ -1524,7 +1526,6 @@ class API(object):
         headers['Content-Length'] = str(len(body))
 
         return headers, body, fp
-
 
 def determine_media_category(is_direct_message, file_type):
     """ :reference: https://developer.twitter.com/en/docs/direct-messages/message-attachments/guides/attaching-media
