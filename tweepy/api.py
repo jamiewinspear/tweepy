@@ -252,7 +252,9 @@ class API(object):
         f = kwargs.pop('file', None)
 
         # Initialize upload (Twitter cannot handle videos > 15 MB)
-        headers, post_data, fp = API._chunk_media('init', filename, self.max_size_chunked, form_field='media', f=f)
+        headers, post_data, fp = API._chunk_media(
+            'init', filename, self.max_size_chunked,
+            form_field='media', f=f, **kwargs)
         kwargs.update({ 'headers': headers, 'post_data': post_data })
 
         # Send the INIT request
@@ -276,7 +278,7 @@ class API(object):
             fsize = os.path.getsize(filename)
             nloops = int(fsize / chunk_size) + (1 if fsize % chunk_size > 0 else 0)
             for i in range(nloops):
-                headers, post_data, fp = API._chunk_media('append', filename, self.max_size_chunked, chunk_size=chunk_size, f=fp, media_id=media_info.media_id, segment_index=i)
+                headers, post_data, fp = API._chunk_media('append', filename, self.max_size_chunked, chunk_size=chunk_size, f=fp, media_id=media_info.media_id, segment_index=i, **kwargs)
                 kwargs.update({ 'headers': headers, 'post_data': post_data, 'parser': RawParser() })
                 # The APPEND command returns an empty response body
                 bind_api(
@@ -289,7 +291,7 @@ class API(object):
                     upload_api=True
                 )(*args, **kwargs)
             # When all chunks have been sent, we can finalize.
-            headers, post_data, fp = API._chunk_media('finalize', filename, self.max_size_chunked, media_id=media_info.media_id)
+            headers, post_data, fp = API._chunk_media('finalize', filename, self.max_size_chunked, media_id=media_info.media_id, **kwargs)
             kwargs = {'headers': headers, 'post_data': post_data}
 
             # The FINALIZE command returns media information
@@ -1426,7 +1428,9 @@ class API(object):
         return headers, body
 
     @staticmethod
-    def _chunk_media(command, filename, max_size, form_field="media", chunk_size=4096, f=None, media_id=None, segment_index=0):
+    def _chunk_media(command, filename, max_size, form_field="media",
+                     chunk_size=4096, f=None, media_id=None, segment_index=0,
+                     **kwargs):
         fp = None
         if command == 'init':
             if f is None:
@@ -1461,6 +1465,12 @@ class API(object):
         if file_type not in CHUNKED_MIMETYPES:
             raise TweepError('Invalid file type for video: %s' % file_type)
 
+        # Message is assumed to be a tweet unless DM explicitly passed
+        if 'is_direct_message' in kwargs:
+            is_direct_message = kwargs['is_direct_message']
+        else:
+            is_direct_message = False
+
         BOUNDARY = b'Tw3ePy'
         body = list()
         if command == 'init':
@@ -1468,14 +1478,9 @@ class API(object):
                 'command': 'INIT',
                 'media_type': file_type,
                 'total_bytes': file_size,
+                'media_category': determine_media_category(
+                    is_direct_message, file_type)
             }
-            if file_type in IMAGE_MIMETYPES:
-                if file_type == 'image/gif':
-                    query['media_category'] = 'tweet_gif'
-                else:
-                    query['media_category'] = 'tweet_image'
-            elif file_type == 'video/mp4':
-                query['media_category'] = 'tweet_video'
             body.append(urlencode(query).encode('utf-8'))
             headers = {
                 'Content-Type': 'application/x-www-form-urlencoded; charset=utf-8'
@@ -1522,3 +1527,23 @@ class API(object):
         headers['Content-Length'] = str(len(body))
 
         return headers, body, fp
+
+
+def determine_media_category(is_direct_message, file_type):
+    """ :reference: https://developer.twitter.com/en/docs/direct-messages/message-attachments/guides/attaching-media
+            :allowed_param:
+        """
+    if is_direct_message:
+        if file_type == 'video/mp4':
+            return 'dm_video'
+        elif file_type == 'image/gif':
+            return 'dm_gif'
+        else:
+            return 'dm_image'
+    else:
+        if file_type == 'video/mp4':
+            return 'tweet_video'
+        elif file_type == 'image/gif':
+            return 'tweet_gif'
+        else:
+            return 'tweet_image'
