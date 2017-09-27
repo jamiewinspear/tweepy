@@ -209,7 +209,6 @@ class API(object):
             :allowed_param:
         """
         f = kwargs.pop('file', None)
-
         mime, _ = mimetypes.guess_type(filename)
         try:
             size = os.path.getsize(filename)
@@ -1466,10 +1465,8 @@ class API(object):
             raise TweepError('Invalid file type for video: %s' % file_type)
 
         # Message is assumed to be a tweet unless DM explicitly passed
-        if 'is_direct_message' in kwargs:
-            is_direct_message = kwargs['is_direct_message']
-        else:
-            is_direct_message = False
+        is_direct_message = kwargs.pop('is_direct_message', False)
+        print "HI THERE I AM INSIDE TWEEPY AND HERE IS DIRECT MESSAGE: ", is_direct_message
 
         BOUNDARY = b'Tw3ePy'
         body = list()
